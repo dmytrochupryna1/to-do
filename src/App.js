@@ -1,10 +1,37 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
+////////////////
+////////////////
+// UTILS ///////
+
 const axiosInstance = axios.create({
   baseURL: 'http://localhost:4000',
 });
 
+const formatTime = (timeInSeconds) => {
+  if (timeInSeconds === 0) {
+    return "Not started";
+  }
+
+  const hours = Math.floor(timeInSeconds / 3600);
+  const minutes = Math.floor((timeInSeconds % 3600) / 60);
+  const seconds = timeInSeconds % 60;
+
+  return [
+    hours ? `${hours} hr${hours > 1 ? 's' : ''}` : null,
+    minutes ? `${minutes} min${minutes > 1 ? 's' : ''}` : null,
+    seconds ? `${seconds} sec${seconds > 1 ? 's' : ''}` : null,
+  ]
+    .filter((part) => part !== null)
+    .join(' ');
+};
+
+
+
+////////////////
+////////////////
+// COMPONENTS //
 
 const NewTask = ({ handleChange, addTask, newTask }) => {
 
@@ -26,25 +53,6 @@ const NewTask = ({ handleChange, addTask, newTask }) => {
     </>
   );
 };
-
-const formatTime = (timeInSeconds) => {
-  if (timeInSeconds === 0) {
-    return "Not started";
-  }
-
-  const hours = Math.floor(timeInSeconds / 3600);
-  const minutes = Math.floor((timeInSeconds % 3600) / 60);
-  const seconds = timeInSeconds % 60;
-
-  return [
-    hours ? `${hours} hr${hours > 1 ? 's' : ''}` : null,
-    minutes ? `${minutes} min${minutes > 1 ? 's' : ''}` : null,
-    seconds ? `${seconds} sec${seconds > 1 ? 's' : ''}` : null,
-  ]
-    .filter((part) => part !== null)
-    .join(' ');
-};
-
 
 const Backlog = ({ backlog, moveToActive, deleteTask, completeFromBacklog }) => {
   const sortedBacklog = backlog.sort((a, b) => b.spentTime - a.spentTime);
@@ -136,20 +144,41 @@ const Completed = ({ completed }) => {
   );
 };
 
+const Today = ({ completedToday, spentTimeToday }) => {
+  return (
+    <div>
+      <h4>Today's Progress</h4>
+      <p>
+        Today you completed {completedToday} {completedToday === 1 ? 'task' : 'tasks'} in {formatTime(spentTimeToday)}
+      </p>
+    </div>
+  );
+};
+
+
+////////////////
+////////////////
+// APP /////////
+
 function App() {
-  // VARIABLES
-  // ------------------------------------------
+  
+  //////////////
+  //////////////
+  // VARIABLES /
+  
   const [newTask, setNewTask] = useState('');
   const [backlog, setBacklog] = useState([]);
   const [activeTask, setActiveTask] = useState(null);
   const [timer, setTimer] = useState(0);
   const [completed, setCompleted] = useState([]);
+  const [tasksCompletedToday, setTasksCompletedToday] = useState(0);
+  const [spentTimeToday, setSpentTimeToday] = useState(0);
+
+////////////////
+////////////////
+// FUNCTION ////
 
 
-
-
-  // FUNCTIONS
-  // ------------------------------------------
   const handleChange = (event) => {
     setNewTask(event.target.value);
   };
@@ -160,6 +189,15 @@ function App() {
       const tasks = response.data;
       setBacklog(tasks.filter((task) => !task.active && !task.completed));
       setCompleted(tasks.filter((task) => task.completed));
+
+      // Calculate tasksCompletedToday and spentTimeToday
+      const today = new Date();
+      const tasksCompletedToday = tasks.filter(
+        (task) => task.completed && new Date(task.completedAt).toDateString() === today.toDateString()
+      );
+      setTasksCompletedToday(tasksCompletedToday.length);
+      setSpentTimeToday(tasksCompletedToday.reduce((acc, task) => acc + task.spentTime, 0));
+
     } catch (error) {
       console.error('Error fetching tasks:', error);
     }
@@ -263,6 +301,7 @@ function App() {
 
   return (
     <>
+      <Today completedToday={tasksCompletedToday} spentTimeToday={spentTimeToday} />
       {activeTask && <Active activeTask={activeTask} pauseTask={pauseTask} completeTask={completeTask} timer={timer} setTimer={setTimer}/>}
       {backlog.length > 0 && <Backlog backlog={backlog} moveToActive={moveToActive} deleteTask={deleteTask} completeFromBacklog={completeFromBacklog}/>}
       <NewTask handleChange={handleChange} addTask={addTask} newTask={newTask}/>

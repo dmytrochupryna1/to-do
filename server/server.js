@@ -58,8 +58,15 @@ app.post('/api/tasks', async (req, res) => {
 
 // Update a task
 app.patch('/api/tasks/:id', async (req, res) => {
+    const updateFields = req.body;
+  
+    // Add completedAt field if the task is being marked as completed
+    if (updateFields.completed) {
+      updateFields.completedAt = new Date();
+    }
+  
     try {
-      const task = await Task.findByIdAndUpdate(req.params.id, req.body, {
+      const task = await Task.findByIdAndUpdate(req.params.id, updateFields, {
         new: true,
       });
       res.status(200).json(task);
@@ -67,6 +74,7 @@ app.patch('/api/tasks/:id', async (req, res) => {
       res.status(400).json({ message: err.message });
     }
   });
+  
 
 // Delete a task
 app.delete('/api/tasks/:id', async (req, res) => {
