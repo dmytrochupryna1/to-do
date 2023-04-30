@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import axios from 'axios';
+import moment from 'moment'
 
 ////////////////
 ////////////////
@@ -86,16 +87,27 @@ const Backlog = ({ backlog, moveToActive, deleteTask, completeFromBacklog }) => 
 };
 
 const Active = ({ activeTask, pauseTask, completeTask, timer, setTimer }) => {
-
   useEffect(() => {
-    if (activeTask) {
+    let interval;
+  
+    if (activeTask && !activeTask.completed) {
       setTimer(activeTask.spentTime);
-      const interval = setInterval(() => {
-        setTimer((prevTimer) => prevTimer + 1);
+      interval = setInterval(() => {
+        if (activeTask && !activeTask.completed) {
+          setTimer((prevTimer) => prevTimer + 1);
+        }
       }, 1000);
-      return () => clearInterval(interval);
+    } else {
+      setTimer(0);
     }
+  
+    return () => {
+      if (interval) {
+        clearInterval(interval);
+      }
+    };
   }, [activeTask]);
+  
 
   return (
     <>
@@ -107,20 +119,26 @@ const Active = ({ activeTask, pauseTask, completeTask, timer, setTimer }) => {
           </div>
           <button onClick={() => pauseTask(timer)}>Pause</button>
           <button onClick={() => completeTask(timer)}>Done</button>
-
         </>
       ) : (
         <div>No active task</div>
       )}
     </>
   );
-
-  
-
-
 };
 
+
+
 const Completed = ({ completed }) => {
+  const completedTasks = useMemo(() => {
+    return completed.map((task) => {
+      return {
+        ...task,
+        formattedCompletedAt: moment(task.completedAt).format('MMMM Do YYYY, h:mm:ss a'),
+      };
+    });
+  }, [completed]);
+
   return (
     <div>
       <h4>Completed</h4>
@@ -129,13 +147,15 @@ const Completed = ({ completed }) => {
           <tr>
             <th>Task Name</th>
             <th>Spent Time</th>
+            <th>Completion Time</th>
           </tr>
         </thead>
         <tbody>
-          {completed.map((task, index) => (
+          {completedTasks.map((task, index) => (
             <tr key={index}>
               <td>{task.name}</td>
               <td>{formatTime(task.spentTime)}</td>
+              <td>{task.formattedCompletedAt}</td>
             </tr>
           ))}
         </tbody>
@@ -143,6 +163,7 @@ const Completed = ({ completed }) => {
     </div>
   );
 };
+
 
 const Today = ({ completedToday, spentTimeToday }) => {
   return (
@@ -265,19 +286,22 @@ function App() {
   const completeTask = async (timer) => {
     const currentActiveTask = activeTask;
     setActiveTask(null);
+  
     try {
-      await axiosInstance.patch(`/api/tasks/${currentActiveTask._id}`, { spentTime: timer, active: false, completed: true });
-      setCompleted([
-        ...completed,
-        {
-          ...currentActiveTask,
-          spentTime: timer,
-        },
-      ]);
+      const updatedTask = {
+        ...currentActiveTask,
+        spentTime: timer,
+        active: false,
+        completed: true,
+        completedAt: new Date(), // Add completedAt time here
+      };
+      await axiosInstance.patch(`/api/tasks/${currentActiveTask._id}`, updatedTask);
+      setCompleted([...completed, updatedTask]);
     } catch (error) {
       console.error('Error updating task:', error);
     }
   };
+  
   
   const deleteTask = async (task) => {
     try {
@@ -290,13 +314,19 @@ function App() {
   
   const completeFromBacklog = async (task) => {
     try {
-      await axiosInstance.patch(`/api/tasks/${task._id}`, { completed: true });
+      const updatedTask = {
+        ...task,
+        completed: true,
+        completedAt: new Date(), // Add completedAt time here
+      };
+      await axiosInstance.patch(`/api/tasks/${task._id}`, updatedTask);
       setBacklog((prevBacklog) => prevBacklog.filter((t) => t !== task));
-      setCompleted([...completed, task]);
+      setCompleted([...completed, updatedTask]);
     } catch (error) {
       console.error('Error updating task:', error);
     }
   };
+  
   
 
   return (
