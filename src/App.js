@@ -165,7 +165,17 @@ const Completed = ({ completed }) => {
 };
 
 
-const Today = ({ completedToday, spentTimeToday }) => {
+const Today = ({ completedToday, spentTimeToday, completed, backlog, setCompletedToday, setSpentTimeToday }) => {
+  
+  useEffect(() => {
+    const today = new Date();
+    const tasksCompletedToday = completed.filter(
+      (task) => task.completed && new Date(task.completedAt).toDateString() === today.toDateString()
+    );
+    setCompletedToday(tasksCompletedToday.length);
+    setSpentTimeToday(tasksCompletedToday.reduce((acc, task) => acc + task.spentTime, 0));
+  }, [completed, backlog]);
+
   return (
     <div>
       <h4>Today's Progress</h4>
@@ -192,7 +202,7 @@ function App() {
   const [activeTask, setActiveTask] = useState(null);
   const [timer, setTimer] = useState(0);
   const [completed, setCompleted] = useState([]);
-  const [tasksCompletedToday, setTasksCompletedToday] = useState(0);
+  const [completedToday, setCompletedToday] = useState(0);
   const [spentTimeToday, setSpentTimeToday] = useState(0);
 
 ////////////////
@@ -211,13 +221,13 @@ function App() {
       setBacklog(tasks.filter((task) => !task.active && !task.completed));
       setCompleted(tasks.filter((task) => task.completed));
 
-      // Calculate tasksCompletedToday and spentTimeToday
-      const today = new Date();
-      const tasksCompletedToday = tasks.filter(
-        (task) => task.completed && new Date(task.completedAt).toDateString() === today.toDateString()
-      );
-      setTasksCompletedToday(tasksCompletedToday.length);
-      setSpentTimeToday(tasksCompletedToday.reduce((acc, task) => acc + task.spentTime, 0));
+      // Calculate completedToday and spentTimeToday
+const today = new Date();
+const tasksCompletedToday = tasks.filter(
+  (task) => task.completed && new Date(task.completedAt).toDateString() === today.toDateString()
+);
+setCompletedToday(tasksCompletedToday.length);
+setSpentTimeToday(tasksCompletedToday.reduce((acc, task) => acc + task.spentTime, 0));
 
     } catch (error) {
       console.error('Error fetching tasks:', error);
@@ -331,7 +341,7 @@ function App() {
 
   return (
     <>
-      <Today completedToday={tasksCompletedToday} spentTimeToday={spentTimeToday} />
+      <Today completedToday={completedToday} spentTimeToday={spentTimeToday} completed={completed} backlog={backlog} setCompletedToday={setCompletedToday} setSpentTimeToday={setSpentTimeToday} />
       {activeTask && <Active activeTask={activeTask} pauseTask={pauseTask} completeTask={completeTask} timer={timer} setTimer={setTimer}/>}
       {backlog.length > 0 && <Backlog backlog={backlog} moveToActive={moveToActive} deleteTask={deleteTask} completeFromBacklog={completeFromBacklog}/>}
       <NewTask handleChange={handleChange} addTask={addTask} newTask={newTask}/>
