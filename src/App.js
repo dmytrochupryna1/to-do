@@ -51,7 +51,7 @@ const Backlog = ({ backlog, moveToActive, deleteTask, completeFromBacklog }) => 
 
   return (
     <div>
-      <h4>Backlog</h4>
+      {/* <h4>Backlog</h4> */}
       <table>
         <thead>
           <tr>
