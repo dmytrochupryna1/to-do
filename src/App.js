@@ -274,10 +274,26 @@ function App() {
           spentTime: timer,
         },
       ]);
+      setTasksCompletedToday(tasksCompletedToday + 1); // Add this line
+      setSpentTimeToday(spentTimeToday + timer); // Add this line
     } catch (error) {
       console.error('Error updating task:', error);
     }
   };
+  
+
+  const completeFromBacklog = async (task) => {
+    try {
+      await axiosInstance.patch(`/api/tasks/${task._id}`, { completed: true });
+      setBacklog((prevBacklog) => prevBacklog.filter((t) => t !== task));
+      setCompleted([...completed, task]);
+      setTasksCompletedToday(tasksCompletedToday + 1); // Add this line
+      setSpentTimeToday(spentTimeToday + task.spentTime); // Add this line
+    } catch (error) {
+      console.error('Error updating task:', error);
+    }
+  };
+  
   
   const deleteTask = async (task) => {
     try {
@@ -288,15 +304,7 @@ function App() {
     }
   };
   
-  const completeFromBacklog = async (task) => {
-    try {
-      await axiosInstance.patch(`/api/tasks/${task._id}`, { completed: true });
-      setBacklog((prevBacklog) => prevBacklog.filter((t) => t !== task));
-      setCompleted([...completed, task]);
-    } catch (error) {
-      console.error('Error updating task:', error);
-    }
-  };
+
   
 
   return (
