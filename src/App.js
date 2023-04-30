@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 
-const NewTask = ({ handleChange, addTask }) => {
+const NewTask = ({ handleChange, addTask, newTask }) => {
   return (
     <>
       <input
         type="text"
         placeholder="Enter new task"
         onChange={handleChange}
+        value={newTask}
       />
       <button onClick={addTask}>Add</button>
     </>
@@ -53,8 +54,7 @@ const Backlog = ({ backlog, moveToActive }) => {
   );
 };
 
-const Active = ({ activeTask, pauseTask }) => {
-  const [timer, setTimer] = useState(activeTask ? activeTask.spentTime : 0);
+const Active = ({ activeTask, pauseTask, timer, setTimer }) => {
 
   useEffect(() => {
     if (activeTask) {
@@ -90,6 +90,9 @@ function App() {
   const [newTask, setNewTask] = useState('');
   const [backlog, setBacklog] = useState([]);
   const [activeTask, setActiveTask] = useState(null);
+  const [timer, setTimer] = useState(0);
+
+
 
   // FUNCTIONS
   // ------------------------------------------
@@ -105,16 +108,30 @@ function App() {
   };
 
   const moveToActive = (task) => {
+    if (activeTask) {
+      setBacklog((prevBacklog) => [
+        ...prevBacklog,
+        {
+          name: activeTask.name,
+          spentTime: timer,
+        },
+      ]);
+    }
+  
     setActiveTask(task);
-    setBacklog(backlog.filter((t) => t !== task));
+    setBacklog((prevBacklog) => prevBacklog.filter((t) => t !== task));
   };
+  
+  
+  
 
   const pauseTask = (timer) => {
+    const currentActiveTask = activeTask; // Save the active task in a temporary variable
     setActiveTask(null);
-    setBacklog([
-      ...backlog,
+    setBacklog((prevBacklog) => [
+      ...prevBacklog,
       {
-        name: activeTask.name,
+        name: currentActiveTask.name,
         spentTime: timer,
       },
     ]);
@@ -122,9 +139,9 @@ function App() {
 
   return (
     <>
-      <Active activeTask={activeTask} pauseTask={pauseTask} />
+      <Active activeTask={activeTask} pauseTask={pauseTask} timer={timer} setTimer={setTimer}/>
       <Backlog backlog={backlog} moveToActive={moveToActive} />
-      <NewTask handleChange={handleChange} addTask={addTask} />
+      <NewTask handleChange={handleChange} addTask={addTask} newTask={newTask}/>
     </>
   );
 }
