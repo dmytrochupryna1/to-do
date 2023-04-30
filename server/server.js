@@ -22,13 +22,15 @@ mongoose.connection.on('error', (err) => {
 // Schema and Model for a Task
 
 const taskSchema = new mongoose.Schema({
-    name: String,
-    spentTime: Number,
-    active: Boolean,
-    completed: Boolean,
-  });
+  name: String,
+  spentTime: Number,
+  active: Boolean,
+  completed: Boolean,
+  completedAt: Date // Add the completedAt field to the schema
+});
 
 const Task = mongoose.model('Task', taskSchema);
+
 
 // API routes
 
