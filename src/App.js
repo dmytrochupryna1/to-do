@@ -99,12 +99,12 @@ const Active = ({ activeTask, pauseTask, completeTask, timer, setTimer }) => {
 
   return (
     <>
-      <h4>In progress... ⌛</h4>
+      <h4>[{activeTask.name}] in progress... ⌛ {formatTime(timer)}</h4>
       {activeTask ? (
         <>
-          <div>
+          {/* <div>
             {activeTask.name} - {formatTime(timer)}
-          </div>
+          </div> */}
           <button onClick={() => pauseTask(timer)}>Pause</button>
           <button onClick={() => completeTask(timer)}>Done</button>
 
@@ -144,16 +144,32 @@ const Completed = ({ completed }) => {
   );
 };
 
-const Today = ({ completedToday, spentTimeToday }) => {
-  return (
-    <div>
-      <h4>Today's Progress</h4>
-      <p>
-        Today you completed {completedToday} {completedToday === 1 ? 'task' : 'tasks'} in {formatTime(spentTimeToday)}
-      </p>
-    </div>
-  );
-};
+// const Today = ({ completedToday, spentTimeToday }) => {
+//   const [info, setInfo] = useState({});
+
+//   useEffect(() => {
+//     setInfo({
+//       completedToday,
+//       spentTimeToday,
+//     });
+//   }, [completedToday, spentTimeToday]);
+
+//   return (
+//     <div>
+//       {info.completedToday === 0 && (
+//         <p>Ready to start the day?</p>
+//       )}
+//       {info.completedToday > 0 && (
+//         <p>
+//           Today you completed {info.completedToday} {info.completedToday === 1 ? 'task' : 'tasks'} in {formatTime(info.spentTimeToday)}
+//         </p>
+//       )}
+//     </div>
+//   );
+// };
+
+
+
 
 
 ////////////////
@@ -186,22 +202,36 @@ function App() {
   const fetchTasks = async () => {
     try {
       const response = await axiosInstance.get('/api/tasks');
-      const tasks = response.data;
+      const tasks = response.data.map(task => ({
+        ...task,
+        completedAt: task.completedAt ? new Date(task.completedAt) : null
+      }));
       setBacklog(tasks.filter((task) => !task.active && !task.completed));
       setCompleted(tasks.filter((task) => task.completed));
-
+  
       // Calculate tasksCompletedToday and spentTimeToday
       const today = new Date();
-      const tasksCompletedToday = tasks.filter(
-        (task) => task.completed && new Date(task.completedAt).toDateString() === today.toDateString()
-      );
+      const tasksCompletedToday = tasks.filter((task) => {
+        if (!task.completedAt) {
+          return false;
+        }
+        const taskDate = new Date(task.completedAt);
+        return (
+          taskDate.getFullYear() === today.getFullYear() &&
+          taskDate.getMonth() === today.getMonth() &&
+          taskDate.getDate() === today.getDate()
+        );
+      });
+  
       setTasksCompletedToday(tasksCompletedToday.length);
       setSpentTimeToday(tasksCompletedToday.reduce((acc, task) => acc + task.spentTime, 0));
-
+  
     } catch (error) {
       console.error('Error fetching tasks:', error);
     }
   };
+  
+  
   
   useEffect(() => {
     fetchTasks();
@@ -209,7 +239,7 @@ function App() {
 
   const addTask = async () => {
     if (newTask.trim() !== '') {
-      const taskData = { name: newTask, spentTime: 0, active: false, completed: false };
+      const taskData = { name: newTask, spentTime: 0, active: false, completed: false, completedAt: null };
       try {
         const response = await axiosInstance.post('/api/tasks', taskData);
         setBacklog([...backlog, response.data]);
@@ -266,7 +296,7 @@ function App() {
     const currentActiveTask = activeTask;
     setActiveTask(null);
     try {
-      await axiosInstance.patch(`/api/tasks/${currentActiveTask._id}`, { spentTime: timer, active: false, completed: true });
+      await axiosInstance.patch(`/api/tasks/${currentActiveTask._id}`, { spentTime: timer, active: false, completed: true, completedAt: new Date() });
       setCompleted([
         ...completed,
         {
@@ -274,25 +304,25 @@ function App() {
           spentTime: timer,
         },
       ]);
-      setTasksCompletedToday(tasksCompletedToday + 1); // Add this line
-      setSpentTimeToday(spentTimeToday + timer); // Add this line
+      setTasksCompletedToday((prevTasksCompletedToday) => prevTasksCompletedToday + 1);
+      setSpentTimeToday((prevSpentTimeToday) => prevSpentTimeToday + timer);
     } catch (error) {
       console.error('Error updating task:', error);
     }
   };
   
-
   const completeFromBacklog = async (task) => {
     try {
-      await axiosInstance.patch(`/api/tasks/${task._id}`, { completed: true });
+      await axiosInstance.patch(`/api/tasks/${task._id}`, { completed: true, completedAt: new Date() });
       setBacklog((prevBacklog) => prevBacklog.filter((t) => t !== task));
       setCompleted([...completed, task]);
-      setTasksCompletedToday(tasksCompletedToday + 1); // Add this line
-      setSpentTimeToday(spentTimeToday + task.spentTime); // Add this line
+      setTasksCompletedToday((prevTasksCompletedToday) => prevTasksCompletedToday + 1);
+      setSpentTimeToday((prevSpentTimeToday) => prevSpentTimeToday + task.spentTime);
     } catch (error) {
       console.error('Error updating task:', error);
     }
   };
+  
   
   
   const deleteTask = async (task) => {
@@ -309,7 +339,10 @@ function App() {
 
   return (
     <>
-      <Today completedToday={tasksCompletedToday} spentTimeToday={spentTimeToday} />
+      {/* <Today
+        completedToday={tasksCompletedToday}
+        spentTimeToday={spentTimeToday}
+      /> */}
       {activeTask && <Active activeTask={activeTask} pauseTask={pauseTask} completeTask={completeTask} timer={timer} setTimer={setTimer}/>}
       {backlog.length > 0 && <Backlog backlog={backlog} moveToActive={moveToActive} deleteTask={deleteTask} completeFromBacklog={completeFromBacklog}/>}
       <NewTask handleChange={handleChange} addTask={addTask} newTask={newTask}/>
