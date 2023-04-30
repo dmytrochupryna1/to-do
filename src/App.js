@@ -1,4 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+
+const axiosInstance = axios.create({
+  baseURL: 'http://localhost:4000',
+});
+
 
 const NewTask = ({ handleChange, addTask, newTask }) => {
 
@@ -148,60 +154,112 @@ function App() {
     setNewTask(event.target.value);
   };
 
-  const addTask = () => {
-    if (newTask.trim() !== '') {
-      setBacklog([...backlog, { name: newTask, spentTime: 0 }]);
-      setNewTask('');
+  const fetchTasks = async () => {
+    try {
+      const response = await axiosInstance.get('/api/tasks');
+      const tasks = response.data;
+      setBacklog(tasks.filter((task) => !task.active && !task.completed));
+      setCompleted(tasks.filter((task) => task.completed));
+    } catch (error) {
+      console.error('Error fetching tasks:', error);
     }
   };
+  
+  useEffect(() => {
+    fetchTasks();
+  }, []);
 
-  const moveToActive = (task) => {
+  const addTask = async () => {
+    if (newTask.trim() !== '') {
+      const taskData = { name: newTask, spentTime: 0, active: false, completed: false };
+      try {
+        const response = await axiosInstance.post('/api/tasks', taskData);
+        setBacklog([...backlog, response.data]);
+        setNewTask('');
+      } catch (error) {
+        console.error('Error adding task:', error);
+      }
+    }
+  };
+  
+  const moveToActive = async (task) => {
     if (activeTask) {
+      try {
+        await axiosInstance.patch(`/api/tasks/${activeTask._id}`, { spentTime: timer, active: false });
+        setBacklog((prevBacklog) => [
+          ...prevBacklog,
+          {
+            ...activeTask,
+            spentTime: timer,
+          },
+        ]);
+      } catch (error) {
+        console.error('Error updating task:', error);
+      }
+    }
+  
+    try {
+      await axiosInstance.patch(`/api/tasks/${task._id}`, { active: true });
+      setActiveTask(task);
+      setBacklog((prevBacklog) => prevBacklog.filter((t) => t !== task));
+    } catch (error) {
+      console.error('Error updating task:', error);
+    }
+  };
+  
+  const pauseTask = async (timer) => {
+    const currentActiveTask = activeTask;
+    setActiveTask(null);
+    try {
+      await axiosInstance.patch(`/api/tasks/${currentActiveTask._id}`, { spentTime: timer, active: false });
       setBacklog((prevBacklog) => [
         ...prevBacklog,
         {
-          name: activeTask.name,
+          ...currentActiveTask,
           spentTime: timer,
         },
       ]);
+    } catch (error) {
+      console.error('Error updating task:', error);
     }
-  
-    setActiveTask(task);
-    setBacklog((prevBacklog) => prevBacklog.filter((t) => t !== task));
   };
   
-  const pauseTask = (timer) => {
-    const currentActiveTask = activeTask; // Save the active task in a temporary variable
-    setActiveTask(null);
-    setBacklog((prevBacklog) => [
-      ...prevBacklog,
-      {
-        name: currentActiveTask.name,
-        spentTime: timer,
-      },
-    ]);
-  };
-
-  const completeTask = (timer) => {
+  const completeTask = async (timer) => {
     const currentActiveTask = activeTask;
     setActiveTask(null);
-    setCompleted([
-      ...completed,
-      {
-        name: currentActiveTask.name,
-        spentTime: timer,
-      },
-    ]);
-  };
-
-  const deleteTask = (task) => {
-    setBacklog((prevBacklog) => prevBacklog.filter((t) => t !== task));
+    try {
+      await axiosInstance.patch(`/api/tasks/${currentActiveTask._id}`, { spentTime: timer, active: false, completed: true });
+      setCompleted([
+        ...completed,
+        {
+          ...currentActiveTask,
+          spentTime: timer,
+        },
+      ]);
+    } catch (error) {
+      console.error('Error updating task:', error);
+    }
   };
   
-  const completeFromBacklog = (task) => {
-    setBacklog((prevBacklog) => prevBacklog.filter((t) => t !== task));
-    setCompleted([...completed, task]);
+  const deleteTask = async (task) => {
+    try {
+      await axiosInstance.delete(`/api/tasks/${task._id}`);
+      setBacklog((prevBacklog) => prevBacklog.filter((t) => t !== task));
+    } catch (error) {
+      console.error('Error deleting task:', error);
+    }
   };
+  
+  const completeFromBacklog = async (task) => {
+    try {
+      await axiosInstance.patch(`/api/tasks/${task._id}`, { completed: true });
+      setBacklog((prevBacklog) => prevBacklog.filter((t) => t !== task));
+      setCompleted([...completed, task]);
+    } catch (error) {
+      console.error('Error updating task:', error);
+    }
+  };
+  
 
   return (
     <>

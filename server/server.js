@@ -24,6 +24,8 @@ mongoose.connection.on('error', (err) => {
 const taskSchema = new mongoose.Schema({
     name: String,
     spentTime: Number,
+    active: Boolean,
+    completed: Boolean,
   });
 
 const Task = mongoose.model('Task', taskSchema);
