@@ -298,6 +298,7 @@ setSpentTimeToday(tasksCompletedToday.reduce((acc, task) => acc + task.spentTime
     setActiveTask(null);
   
     try {
+
       const updatedTask = {
         ...currentActiveTask,
         spentTime: timer,
@@ -311,18 +312,23 @@ setSpentTimeToday(tasksCompletedToday.reduce((acc, task) => acc + task.spentTime
       console.error('Error updating task:', error);
     }
   };
-  
+ 
   
   const deleteTask = async (task) => {
+
     try {
-      await axiosInstance.delete(`/api/tasks/${task._id}`);
+      await axiosInstance.patch(`/api/tasks/${task._id}`, { completed: true });
       setBacklog((prevBacklog) => prevBacklog.filter((t) => t !== task));
+      setCompleted([...completed, task]);
+      setTasksCompletedToday(tasksCompletedToday + 1); // Add this line
+      setSpentTimeToday(spentTimeToday + task.spentTime); // Add this line
     } catch (error) {
-      console.error('Error deleting task:', error);
+      console.error('Error updating task:', error);
     }
   };
   
-  const completeFromBacklog = async (task) => {
+  
+  const deleteTask = async (task) => {
     try {
       const updatedTask = {
         ...task,
@@ -332,11 +338,14 @@ setSpentTimeToday(tasksCompletedToday.reduce((acc, task) => acc + task.spentTime
       await axiosInstance.patch(`/api/tasks/${task._id}`, updatedTask);
       setBacklog((prevBacklog) => prevBacklog.filter((t) => t !== task));
       setCompleted([...completed, updatedTask]);
+
     } catch (error) {
-      console.error('Error updating task:', error);
+      console.error('Error deleting task:', error);
     }
   };
   
+  
+
   
 
   return (
