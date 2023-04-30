@@ -23,7 +23,7 @@ const Backlog = ({ backlog }) => {
 
   return (
     <div>
-      <h2>Backlog</h2>
+      <h4>Backlog</h4>
       <table>
         <thead>
           <tr>
@@ -46,7 +46,14 @@ const Backlog = ({ backlog }) => {
   );
 };
 
-
+const Active = () => {
+  
+  return (
+    <>
+    <h3>in progress</h3>
+    </>
+  )
+}
 
 
 
@@ -74,8 +81,9 @@ function App() {
 
   return (
     <>
-    <NewTask handleChange={handleChange} addTask={addTask}/>
+    <Active />    
     <Backlog backlog={backlog}/>
+    <NewTask handleChange={handleChange} addTask={addTask}/>
     </>
   );
 }
