@@ -1,12 +1,19 @@
 import React, { useState, useEffect } from 'react';
 
 const NewTask = ({ handleChange, addTask, newTask }) => {
+
+  const handleKeyDown = (event) => {
+    if (event.keyCode === 13) {
+      addTask();
+    }
+  };
   return (
     <>
       <input
         type="text"
         placeholder="Enter new task"
         onChange={handleChange}
+        onKeyDown={handleKeyDown}
         value={newTask}
       />
       <button onClick={addTask}>Add</button>
@@ -33,7 +40,9 @@ const formatTime = (timeInSeconds) => {
 };
 
 
-const Backlog = ({ backlog, moveToActive }) => {
+const Backlog = ({ backlog, moveToActive, deleteTask, completeFromBacklog }) => {
+  const sortedBacklog = backlog.sort((a, b) => b.spentTime - a.spentTime);
+
   return (
     <div>
       <h4>Backlog</h4>
@@ -42,15 +51,18 @@ const Backlog = ({ backlog, moveToActive }) => {
           <tr>
             <th>Task Name</th>
             <th>Spent Time</th>
+            <th>Action</th>
           </tr>
         </thead>
         <tbody>
-          {backlog.map((task, index) => (
+          {sortedBacklog.map((task, index) => (
             <tr key={index}>
               <td>
                 <button onClick={() => moveToActive(task)}>{task.name}</button>
               </td>
               <td>{formatTime(task.spentTime)}</td>
+              <button onClick={() => completeFromBacklog(task)}>🏁</button>
+              <button onClick={() => deleteTask(task)}>💀</button>
             </tr>
           ))}
         </tbody>
@@ -59,7 +71,7 @@ const Backlog = ({ backlog, moveToActive }) => {
   );
 };
 
-const Active = ({ activeTask, pauseTask, timer, setTimer }) => {
+const Active = ({ activeTask, pauseTask, completeTask, timer, setTimer }) => {
 
   useEffect(() => {
     if (activeTask) {
@@ -73,21 +85,50 @@ const Active = ({ activeTask, pauseTask, timer, setTimer }) => {
 
   return (
     <>
-      <h3>In progress</h3>
+      <h4>In progress... ⌛</h4>
       {activeTask ? (
         <>
           <div>
             {activeTask.name} - {formatTime(timer)}
           </div>
           <button onClick={() => pauseTask(timer)}>Pause</button>
+          <button onClick={() => completeTask(timer)}>Done</button>
+
         </>
       ) : (
         <div>No active task</div>
       )}
     </>
   );
+
+  
+
+
 };
 
+const Completed = ({ completed }) => {
+  return (
+    <div>
+      <h4>Completed</h4>
+      <table>
+        <thead>
+          <tr>
+            <th>Task Name</th>
+            <th>Spent Time</th>
+          </tr>
+        </thead>
+        <tbody>
+          {completed.map((task, index) => (
+            <tr key={index}>
+              <td>{task.name}</td>
+              <td>{formatTime(task.spentTime)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+};
 
 function App() {
   // VARIABLES
@@ -96,6 +137,8 @@ function App() {
   const [backlog, setBacklog] = useState([]);
   const [activeTask, setActiveTask] = useState(null);
   const [timer, setTimer] = useState(0);
+  const [completed, setCompleted] = useState([]);
+
 
 
 
@@ -127,9 +170,6 @@ function App() {
     setBacklog((prevBacklog) => prevBacklog.filter((t) => t !== task));
   };
   
-  
-  
-
   const pauseTask = (timer) => {
     const currentActiveTask = activeTask; // Save the active task in a temporary variable
     setActiveTask(null);
@@ -142,11 +182,34 @@ function App() {
     ]);
   };
 
+  const completeTask = (timer) => {
+    const currentActiveTask = activeTask;
+    setActiveTask(null);
+    setCompleted([
+      ...completed,
+      {
+        name: currentActiveTask.name,
+        spentTime: timer,
+      },
+    ]);
+  };
+
+  const deleteTask = (task) => {
+    setBacklog((prevBacklog) => prevBacklog.filter((t) => t !== task));
+  };
+  
+  const completeFromBacklog = (task) => {
+    setBacklog((prevBacklog) => prevBacklog.filter((t) => t !== task));
+    setCompleted([...completed, task]);
+  };
+
   return (
     <>
-      <Active activeTask={activeTask} pauseTask={pauseTask} timer={timer} setTimer={setTimer}/>
-      <Backlog backlog={backlog} moveToActive={moveToActive} />
+      {activeTask && <Active activeTask={activeTask} pauseTask={pauseTask} completeTask={completeTask} timer={timer} setTimer={setTimer}/>}
+      {backlog.length > 0 && <Backlog backlog={backlog} moveToActive={moveToActive} deleteTask={deleteTask} completeFromBacklog={completeFromBacklog}/>}
       <NewTask handleChange={handleChange} addTask={addTask} newTask={newTask}/>
+      {completed.length > 0 && <Completed completed={completed} />}
+
     </>
   );
 }
