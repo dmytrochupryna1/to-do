@@ -15,6 +15,10 @@ const NewTask = ({ handleChange, addTask, newTask }) => {
 };
 
 const formatTime = (timeInSeconds) => {
+  if (timeInSeconds === 0) {
+    return "Not started";
+  }
+
   const hours = Math.floor(timeInSeconds / 3600);
   const minutes = Math.floor((timeInSeconds % 3600) / 60);
   const seconds = timeInSeconds % 60;
@@ -27,6 +31,7 @@ const formatTime = (timeInSeconds) => {
     .filter((part) => part !== null)
     .join(' ');
 };
+
 
 const Backlog = ({ backlog, moveToActive }) => {
   return (
