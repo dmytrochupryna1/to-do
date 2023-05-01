@@ -243,9 +243,6 @@ function App() {
         );
       });
   
-      setTasksCompletedToday(tasksCompletedToday.length);
-      setSpentTimeToday(tasksCompletedToday.reduce((acc, task) => acc + task.spentTime, 0));
-  
     } catch (error) {
       console.error('Error fetching tasks:', error);
     }
@@ -325,7 +322,6 @@ function App() {
           spentTime: timer,
         },
       ]);
-      setTasksCompletedToday((prevTasksCompletedToday) => prevTasksCompletedToday + 1);
       setSpentTimeToday((prevSpentTimeToday) => prevSpentTimeToday + timer);
     } catch (error) {
       console.error('Error updating task:', error);
@@ -337,7 +333,6 @@ function App() {
       await axiosInstance.patch(`/api/tasks/${task._id}`, { completed: true, completedAt: new Date() });
       setBacklog((prevBacklog) => prevBacklog.filter((t) => t !== task));
       setCompleted([...completed, task]);
-      setTasksCompletedToday((prevTasksCompletedToday) => prevTasksCompletedToday + 1);
       setSpentTimeToday((prevSpentTimeToday) => prevSpentTimeToday + task.spentTime);
     } catch (error) {
       console.error('Error updating task:', error);
