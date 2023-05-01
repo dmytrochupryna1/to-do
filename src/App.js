@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import axios from 'axios';
 import moment from 'moment'
+import './App.css';
 
 ////////////////
 ////////////////
 // UTILS ///////
+
 
 const axiosInstance = axios.create({
   baseURL: 'http://localhost:4000',
@@ -76,8 +78,8 @@ const Backlog = ({ backlog, moveToActive, deleteTask, completeFromBacklog }) => 
                 <button onClick={() => moveToActive(task)}>{task.name}</button>
               </td>
               <td>{formatTime(task.spentTime)}</td>
-              <button onClick={() => completeFromBacklog(task)}>🏁</button>
-              <button onClick={() => deleteTask(task)}>💀</button>
+              <button onClick={() => completeFromBacklog(task)}>✅</button>
+              <button onClick={() => deleteTask(task)}>🗑️</button>
             </tr>
           ))}
         </tbody>
@@ -362,7 +364,7 @@ function App() {
   
 
   return (
-    <>
+    <div className="App-container">
       {/* <Today
         completedToday={tasksCompletedToday}
         spentTimeToday={spentTimeToday}
@@ -372,7 +374,7 @@ function App() {
       <NewTask handleChange={handleChange} addTask={addTask} newTask={newTask}/>
       {completed.length > 0 && <Completed completed={completed} />}
 
-    </>
+    </div>
   );
 }
 
