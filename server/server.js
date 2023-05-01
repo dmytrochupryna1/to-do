@@ -6,7 +6,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-uri = "mongodb+srv://dmytrochupryna:uQLnkY84mCsVwwd5@kp.u17s6dm.mongodb.net/to-do"
+const uri = "mongodb+srv://dmytrochupryna:uQLnkY84mCsVwwd5@kp.u17s6dm.mongodb.net/to-do"
 mongoose
     .connect(uri, { useNewUrlParser: true, useUnifiedTopology: true 
     })
